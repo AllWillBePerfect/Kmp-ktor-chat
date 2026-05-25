@@ -4,8 +4,12 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.example.project.domain.model.ChatRoom
+import org.example.project.domain.model.ChatType
 import org.example.project.ui.screens.chats.components.ChatListItemComponent
 import org.example.project.ui.utils.PreviewWrapper
 import org.koin.compose.viewmodel.koinViewModel
@@ -21,7 +27,8 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun ChatsRoute(
     viewModel: ChatsViewModel = koinViewModel(),
-    navigateToChatScreen: () -> Unit
+    navigateToChatScreen: (String) -> Unit,
+    navigateToSettingsScreen: () -> Unit
 ) {
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -29,7 +36,8 @@ fun ChatsRoute(
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
-                ChatsUiEvent.OnItemClicked -> navigateToChatScreen()
+                is ChatsUiEvent.OnItemClicked -> navigateToChatScreen(event.chatId)
+                ChatsUiEvent.OnSettingsClicked -> navigateToSettingsScreen()
             }
         }
     }
@@ -70,6 +78,16 @@ private fun ChatsContentWrapper(
             CenterAlignedTopAppBar(
                 title = {
                     Text(text = "Chats")
+                },
+                actions = {
+                    IconButton(onClick = {
+                        onAction(ChatsUiAction.OnSettingsClicked)
+                    }) {
+                        Icon(
+                            Icons.Default.Settings,
+                            null
+                        )
+                    }
                 }
             )
         }
@@ -87,8 +105,10 @@ private fun ChatsContent(
     LazyColumn(
         modifier = Modifier.padding(innerPadding)
     ) {
-        items((1..10).toList()) {
+        items(uiState.items) { chatRoom ->
             ChatListItemComponent(
+                chatRoom = chatRoom,
+                currentUserId = uiState.currentUserId,
                 onAction = onAction
             )
         }

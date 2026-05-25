@@ -1,27 +1,14 @@
 package org.example.project.ui.screens.chat
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -33,9 +20,9 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ChatRoute(
+
     viewModel: ChatViewModel = koinViewModel()
 ) {
-
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     ChatScreen(
@@ -92,7 +79,9 @@ private fun ChatContent(
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.messages.size) {
-            listState.animateScrollToItem(uiState.messages.size)
+        if (uiState.messages.isNotEmpty()) {
+            listState.animateScrollToItem(uiState.messages.size - 1)
+        }
     }
 
     Column(
@@ -105,14 +94,14 @@ private fun ChatContent(
             state = listState,
 
         ) {
-            items(uiState.messages) {
+            items(uiState.messages) { message ->
                 ListItem(
                     modifier = Modifier.clickable {},
                     headlineContent = {
-                        Text("User")
+                        Text(message.author)
                     },
                     supportingContent = {
-                        Text(it)
+                        Text(message.content)
                     }
 
                 )
@@ -121,11 +110,12 @@ private fun ChatContent(
         Row(
             modifier = Modifier
                     .padding(horizontal = 16.dp)
+                    .padding(bottom = 16.dp)
 
         ) {
             OutlinedTextField(
                 shape = RoundedCornerShape(32.dp),
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxWidth(),
                 value = uiState.userText,
                 onValueChange = { onAction(ChatUiAction.TextTyped(it)) },
                 trailingIcon = {
@@ -147,9 +137,3 @@ private fun ChatContent(
         }
     }
 }
-
-
-
-
-
-

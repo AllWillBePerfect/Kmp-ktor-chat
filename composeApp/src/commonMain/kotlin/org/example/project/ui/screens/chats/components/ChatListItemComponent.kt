@@ -9,16 +9,20 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import org.example.project.domain.model.ChatRoom
+import org.example.project.domain.model.ChatType
 import org.example.project.ui.screens.chats.ChatsUiAction
 import org.example.project.ui.utils.PreviewWrapper
 
 @Composable
 fun ChatListItemComponent(
+    chatRoom: ChatRoom,
+    currentUserId: String?,
     onAction: (ChatsUiAction) -> Unit
 ) {
     ListItem(
         modifier = Modifier
-            .clickable { onAction(ChatsUiAction.OnItemClicked) },
+            .clickable { onAction(ChatsUiAction.OnItemClicked(chatRoom.id)) },
         leadingContent = {
             Icon(
                 Icons.Default.VerifiedUser,
@@ -26,14 +30,14 @@ fun ChatListItemComponent(
             )
         },
         headlineContent = {
-            Text("Chat name")
+            Text(chatRoom.displayTitle(currentUserId))
         },
         supportingContent = {
             Text("last message")
         },
         trailingContent = {
             RoundBadgeComponent(
-                count = 50000
+                count = 0
             )
         }
     )
@@ -43,6 +47,8 @@ fun ChatListItemComponent(
 @Preview
 private fun PreviewNight() = PreviewWrapper {
     ChatListItemComponent(
+        chatRoom = ChatRoom(id = "1", type = ChatType.Direct, title = "Preview Chat"),
+        currentUserId = "me",
         onAction = {}
     )
 }
@@ -54,7 +60,8 @@ private fun PreviewLight() = PreviewWrapper(
     isDarkTheme = false
 ) {
     ChatListItemComponent(
+        chatRoom = ChatRoom(id = "1", type = ChatType.Direct, title = "Preview Chat"),
+        currentUserId = "me",
         onAction = {}
     )
 }
-

@@ -8,5 +8,11 @@ sealed interface AppRoutes {
     data object Chats
 
     @Serializable
-    data object Chat
+    data object Login
+
+    @Serializable
+    data class Chat(val chatId: String)
+
+    @Serializable
+    data object Settings
 }

@@ -1,4 +1,4 @@
-package org.example.project.ui.components
+package org.example.project.ui.components.message
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import org.example.project.ui.components.message.MessageItemComponent
 import org.example.project.ui.utils.PreviewWrapper
 
 @Composable
@@ -60,10 +59,11 @@ fun MessageComponent(
                 isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent
             )
 
-            AvatarOrSpacer(
-                showAvatar = isBelowMessageAuthorDifferent,
-                borderColor = borderColor
-            )
+//            AvatarOrSpacer(
+//                showAvatar = isBelowMessageAuthorDifferent,
+//                borderColor = borderColor
+//            )
+            Spacer(Modifier.width(16.dp))
         } else {
 
             AvatarOrSpacer(

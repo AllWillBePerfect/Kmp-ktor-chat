@@ -1,4 +1,7 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.gradle.api.tasks.testing.Test
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -47,6 +50,9 @@ kotlin {
             implementation(libs.ktor.client.cio)
             //ktor websockets
             implementation(libs.ktor.client.websockets)
+            implementation(libs.ktor.client.content.negotiation)
+            implementation(libs.ktor.serialization.kotlinx.json)
+            //ktor json
 
 
             implementation(libs.navigation.compose)
@@ -55,12 +61,16 @@ kotlin {
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
 
-            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
+            implementation(libs.kotlinx.serialization.json)
+            implementation(libs.androidx.datastore.core)
+            implementation(libs.androidx.datastore.preferences)
 
 
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
+            implementation(libs.kotlinx.coroutines.test)
+            implementation(libs.ktor.client.mock)
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
@@ -98,6 +108,18 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
+}
+
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events = setOf(
+            TestLogEvent.PASSED,
+            TestLogEvent.SKIPPED,
+            TestLogEvent.FAILED
+        )
+        exceptionFormat = TestExceptionFormat.FULL
+        showStandardStreams = false
+    }
 }
 
 compose.desktop {

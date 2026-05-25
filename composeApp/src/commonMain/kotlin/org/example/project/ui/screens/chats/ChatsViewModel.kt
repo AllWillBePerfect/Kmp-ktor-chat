@@ -8,15 +8,56 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import org.example.project.ui.screens.chat.ChatUiAction
+import org.example.project.data.PreferencesDataSource
+import org.example.project.domain.model.ChatRoom
+import org.example.project.ktor.WsClientContract
+import org.example.project.ktor.isConnected
+import org.example.project.ui.screens.chat.ServerEvent
 
-class ChatsViewModel : ViewModel() {
+class ChatsViewModel(
+    private val wsClient: WsClientContract,
+    private val pref: PreferencesDataSource
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ChatsUiState())
     val uiState = _uiState.asStateFlow()
 
-    private val _uiEvent = MutableSharedFlow<ChatsUiEvent>(replay = 1)
+    private val _uiEvent = MutableSharedFlow<ChatsUiEvent>()
     val uiEvent = _uiEvent.asSharedFlow()
+
+    init {
+        // Подгружаем ID текущего пользователя для правильного отображения имен в Direct чатах
+        viewModelScope.launch {
+            pref.userDataFlow.collect { userData ->
+                _uiState.update { it.copy(currentUserId = userData.userId) }
+            }
+        }
+
+        // Реактивно запрашиваем список чатов при каждом (восстановлении) соединения
+        viewModelScope.launch {
+            wsClient.connectionState.collect { state ->
+                if (state.isConnected) {
+                    println("ChatsViewModel: Connection restored, fetching chats")
+                    wsClient.requestChats()
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            wsClient.events.collect { event ->
+                when (event) {
+                    is ServerEvent.ChatsSnapshotEvent -> {
+                        _uiState.update { it.copy(items = event.chats) }
+                    }
+                    is ServerEvent.ChatCreatedEvent -> {
+                        _uiState.update { it.copy(items = (it.items + event.chat).distinctBy { room -> room.id }) }
+                        sendEvent(ChatsUiEvent.OnItemClicked(event.chat.id))
+                    }
+                    else -> Unit
+                }
+            }
+        }
+    }
 
     fun onAction(action: ChatsUiAction) {
         when (action) {
@@ -25,16 +66,20 @@ class ChatsViewModel : ViewModel() {
             }
 
             ChatsUiAction.SubmitClicked -> {
-                reduce {
-                    copy(
-                        items = items + userText,
-                        userText = ""
-                    )
+                if (uiState.value.userText.isNotBlank()) {
+                    viewModelScope.launch {
+                        wsClient.createChat(uiState.value.userText)
+                        reduce { copy(userText = "") }
+                    }
                 }
             }
 
-            ChatsUiAction.OnItemClicked -> {
-                sendEvent(ChatsUiEvent.OnItemClicked)
+            is ChatsUiAction.OnItemClicked -> {
+                sendEvent(ChatsUiEvent.OnItemClicked(action.chatId))
+            }
+
+            ChatsUiAction.OnSettingsClicked -> {
+                sendEvent(ChatsUiEvent.OnSettingsClicked)
             }
         }
     }
@@ -54,21 +99,18 @@ class ChatsViewModel : ViewModel() {
 
 data class ChatsUiState(
     val userText: String = "",
-    val items: List<String> = emptyList()
+    val items: List<ChatRoom> = emptyList(),
+    val currentUserId: String? = null
 )
 
 sealed interface ChatsUiAction {
-
-    data class TextTyped(
-        val text: String
-    ) : ChatsUiAction
-
+    data class TextTyped(val text: String) : ChatsUiAction
     data object SubmitClicked : ChatsUiAction
-
-    data object OnItemClicked : ChatsUiAction
+    data class OnItemClicked(val chatId: String) : ChatsUiAction
+    data object OnSettingsClicked : ChatsUiAction
 }
 
 sealed interface ChatsUiEvent {
-
-    data object OnItemClicked : ChatsUiEvent
+    data class OnItemClicked(val chatId: String) : ChatsUiEvent
+    data object OnSettingsClicked : ChatsUiEvent
 }

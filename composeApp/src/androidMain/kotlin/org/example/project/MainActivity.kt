@@ -8,8 +8,11 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.view.ViewCompat
 import org.example.project.learn.broadcast.CustomBroadcastEvent
 import org.example.project.learn.broadcast.sendCustomBroadcastEvent
 import org.example.project.ui.App
@@ -21,11 +24,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+//        ViewCompat.setOnApplyWindowInsetsListener(window.decorView) { _, insets -> insets }
         Log.d("MainActivity", "onCreate")
 
         setContent {
             App()
         }
+
+//        setContentView(
+//            ComposeView(this).apply {
+//                consumeWindowInsets = false
+//                setContent {
+//                    App()
+//                }
+//            }
+//        )
 
     }
 
