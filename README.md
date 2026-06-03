@@ -1,40 +1,51 @@
-This is a Kotlin Multiplatform project targeting Android, Desktop (JVM).
+# Kmp-ktor-chat
 
-* [/composeApp](./composeApp/src) is for code that will be shared across your Compose Multiplatform applications.
-  It contains several subfolders:
-  - [commonMain](./composeApp/src/commonMain/kotlin) is for code that’s common for all targets.
-  - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
-    For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
-    the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
-    folder is the appropriate location.
+Мессенджер на Kotlin Multiplatform.
 
-### Build and Run Android Application
+Проект сделан как попытка собрать свое приложение для переписки с общей логикой для разных платформ.
 
-To build and run the development version of the Android app, use the run configuration from the run widget
-in your IDE’s toolbar or build it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:assembleDebug
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:assembleDebug
-  ```
+Сейчас проект находится в активной разработке. Одна из целей проекта — не только сделать рабочее приложение, но и лучше понять, как устроены чаты и мессенджеры изнутри.
 
-### Build and Run Desktop (JVM) Application
+## Что сделано
 
-To build and run the development version of the desktop app, use the run configuration from the run widget
-in your IDE’s toolbar or run it directly from the terminal:
-- on macOS/Linux
-  ```shell
-  ./gradlew :composeApp:run
-  ```
-- on Windows
-  ```shell
-  .\gradlew.bat :composeApp:run
-  ```
+Сейчас в проекте работает:
 
----
+- авторизация
+- список чатов
+- экран переписки
+- отправка и получение сообщений
+- typing status
+- read / unread состояние
+- unread badge для чатов
+- переподключение к сокету
+- Android и Desktop версии
 
-Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
+## Скриншоты
+
+Здесь потом будут скриншоты приложения.
+
+<div>
+  <img src="docs/screenshots/chats.png" width="30%" />
+  <img src="docs/screenshots/chat.png" width="30%" />
+  <img src="docs/screenshots/login.png" width="30%" />
+</div>
+
+## Сборка
+
+### Android
+
+```sh
+./gradlew :composeApp:assembleDebug
+```
+
+### Desktop
+
+```sh
+./gradlew :composeApp:run
+```
+
+## Отдельно
+
+При работе над проектом я обращался к:
+- Jetchat — оттуда я брал UI: https://github.com/android/compose-samples/tree/main/Jetchat
+- Stream Chat Android SDK — оттуда я ориентировался на структуру: https://github.com/GetStream/stream-chat-android
