@@ -26,13 +26,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import org.example.project.ui.utils.PreviewWrapper
+import org.example.project.v2.core.models.SyncStatus
 
 @Composable
 fun MessageComponent(
     text: String,
     isUserMe: Boolean,
     isAboveMessageAuthorDifferent: Boolean,
-    isBelowMessageAuthorDifferent: Boolean
+    isBelowMessageAuthorDifferent: Boolean,
+    readCount: Int,
+    syncStatus: SyncStatus,
+    createdAt: String?
 ) {
     val borderColor = if (isUserMe) {
         MaterialTheme.colorScheme.primary
@@ -56,7 +60,10 @@ fun MessageComponent(
             MessageBubble(
                 text = text,
                 isUserMe = true,
-                isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent
+                isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent,
+                readCount = readCount,
+                syncStatus = syncStatus,
+                createdAt = createdAt
             )
 
 //            AvatarOrSpacer(
@@ -66,15 +73,21 @@ fun MessageComponent(
             Spacer(Modifier.width(16.dp))
         } else {
 
-            AvatarOrSpacer(
+            //todo вернуть
+            /*AvatarOrSpacer(
                 showAvatar = isBelowMessageAuthorDifferent,
                 borderColor = borderColor
-            )
+            )*/
+            //todo убрать
+            Spacer(Modifier.width(16.dp))
 
             MessageBubble(
                 text = text,
                 isUserMe = false,
-                isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent
+                isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent,
+                readCount = readCount,
+                syncStatus = syncStatus,
+                createdAt = createdAt
             )
         }
     }
@@ -84,7 +97,10 @@ fun MessageComponent(
 private fun RowScope.MessageBubble(
     text: String,
     isUserMe: Boolean,
-    isBelowMessageAuthorDifferent: Boolean
+    isBelowMessageAuthorDifferent: Boolean,
+    readCount: Int,
+    syncStatus: SyncStatus,
+    createdAt: String?
 ) {
     MessageSpacing(
         modifier = Modifier
@@ -95,7 +111,11 @@ private fun RowScope.MessageBubble(
             .weight(1f, fill = false),
         text = text,
         isUserMe = isUserMe,
-        isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent
+        isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent,
+        readCount = readCount,
+        syncStatus = syncStatus,
+        createdAt = createdAt
+
     )
 }
 
@@ -104,7 +124,8 @@ private fun RowScope.AvatarOrSpacer(
     showAvatar: Boolean,
     borderColor: Color
 ) {
-    if (showAvatar) {
+    if (showAvatar)
+    {
         Image(
             modifier = Modifier
                 .padding(bottom = 8.dp)
@@ -131,6 +152,9 @@ private fun MessageSpacing(
     text: String,
     isUserMe: Boolean,
     isBelowMessageAuthorDifferent: Boolean,
+    readCount: Int,
+    syncStatus: SyncStatus,
+    createdAt: String?
 ) {
     Column(
         modifier = modifier
@@ -138,6 +162,9 @@ private fun MessageSpacing(
         MessageItemComponent(
             text = text,
             isUserMe = isUserMe,
+            readCount = readCount,
+            syncStatus = syncStatus,
+            createdAt = createdAt
         )
         if (isBelowMessageAuthorDifferent) {
             Spacer(modifier = Modifier.height(8.dp))
@@ -155,14 +182,20 @@ private fun PreviewNight() = PreviewWrapper {
            text = "Hello",
            isUserMe = true,
            isAboveMessageAuthorDifferent = false,
-           isBelowMessageAuthorDifferent = true
+           isBelowMessageAuthorDifferent = true,
+           readCount = 0,
+           syncStatus = SyncStatus.SYNC_NEEDED,
+           createdAt = ""
        )
 
        MessageComponent(
            text = "Hello",
            isUserMe = true,
            isAboveMessageAuthorDifferent = true,
-           isBelowMessageAuthorDifferent = false
+           isBelowMessageAuthorDifferent = false,
+           readCount = 0,
+           syncStatus = SyncStatus.SYNC_NEEDED,
+           createdAt = ""
        )
    }
 }
@@ -176,7 +209,10 @@ private fun PreviewLight() = PreviewWrapper(
         text = "Hello",
         isUserMe = true,
         isAboveMessageAuthorDifferent = true,
-        isBelowMessageAuthorDifferent = true
+        isBelowMessageAuthorDifferent = true,
+        readCount = 0,
+        syncStatus = SyncStatus.SYNC_NEEDED,
+        createdAt = ""
     )
 }
 

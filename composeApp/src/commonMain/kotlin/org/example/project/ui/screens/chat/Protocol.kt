@@ -20,6 +20,7 @@ sealed interface ClientCommand {
     data class SendMessageCommand(
         override val type: String = "send_message",
         val chatId: String = "general",
+        val clientMessageId: String? = null,
         val text: String
     ) : ClientCommand
 

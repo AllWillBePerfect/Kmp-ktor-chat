@@ -7,13 +7,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.example.project.data.PreferencesDataSource
+import org.example.project.data.room.MessageDao
 import org.example.project.ktor.WsClientContract
 import org.example.project.ktor.isConnected
 
 class MainViewModel(
     private val wsClient: WsClientContract,
-    private val pref: PreferencesDataSource
+    private val pref: PreferencesDataSource,
 ) : ViewModel() {
+
+
 
     private var connectionJob: Job? = null
 

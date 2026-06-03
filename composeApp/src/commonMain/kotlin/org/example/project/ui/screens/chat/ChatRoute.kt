@@ -13,8 +13,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.example.project.domain.model.SyncStatus
 import org.koin.compose.viewmodel.koinViewModel
 
 
@@ -95,15 +97,33 @@ private fun ChatContent(
 
         ) {
             items(uiState.messages) { message ->
+                val retryable = message.author == "me" && message.syncStatus != SyncStatus.COMPLETED && message.syncStatus != SyncStatus.IN_PROGRESS
                 ListItem(
-                    modifier = Modifier.clickable {},
+                    modifier = Modifier.clickable(enabled = retryable) {
+                        onAction(ChatUiAction.RetryMessage(message.localId))
+                    },
                     headlineContent = {
                         Text(message.author)
                     },
                     supportingContent = {
-                        Text(message.content)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(message.content)
+                            message.syncStatus.statusLabel(message.lastSyncError)?.let { statusText ->
+                                Text(
+                                    text = statusText,
+                                    color = if (message.syncStatus == SyncStatus.SYNC_NEEDED) {
+                                        MaterialTheme.colorScheme.error
+                                    } else {
+                                        Color.Unspecified
+                                    },
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    },
+                    trailingContent = {
+                        Text(message.timestamp)
                     }
-
                 )
             }
         }
@@ -135,5 +155,14 @@ private fun ChatContent(
                 }
             )
         }
+    }
+}
+
+private fun SyncStatus.statusLabel(lastSyncError: String?): String? {
+    return when (this) {
+        SyncStatus.COMPLETED -> null
+        SyncStatus.IN_PROGRESS -> "Sending..."
+        SyncStatus.SYNC_NEEDED -> lastSyncError?.let { "Failed: $it. Tap to retry." } ?: "Pending. Tap to retry."
+        SyncStatus.FAILED_PERMANENTLY -> lastSyncError?.let { "Failed permanently: $it" } ?: "Failed permanently"
     }
 }

@@ -15,12 +15,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
-
 import org.example.project.ui.AppRoutes
 import org.example.project.ui.screens.chats.ChatsRoute
 import org.example.project.ui.screens.conversation.ConversationRoute
 import org.example.project.ui.screens.login.LoginRoute
 import org.example.project.ui.screens.settings.SettingsRoute
+import org.example.project.v2.ui.V2App
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.example.project.data.PreferencesDataSource
@@ -29,7 +29,7 @@ import org.example.project.data.PreferencesDataSource
 @Preview()
 fun App() {
     AppTheme {
-        AppNavigation()
+        V2App()
     }
 }
 
@@ -129,12 +129,12 @@ fun AppNavigation(
         }
 
         composable<AppRoutes.Chat> { backStackEntry ->
-            val chat: AppRoutes.Chat = backStackEntry.toRoute()
+           /* val chat: AppRoutes.Chat = backStackEntry.toRoute()
             ConversationRoute(
                 onBackPressed = {
                     navHostController.popBackStack()
                 }
-            )
+            )*/
         }
 
         composable<AppRoutes.Settings> {

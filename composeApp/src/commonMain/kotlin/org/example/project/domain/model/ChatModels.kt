@@ -44,6 +44,7 @@ data class ChatRoom(
 @Serializable
 data class ChatMessage(
     val id: String,
+    val clientMessageId: String? = null,
     val chatId: String,
     val senderId: String,
     val senderName: String,

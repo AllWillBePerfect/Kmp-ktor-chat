@@ -247,7 +247,7 @@ private fun PreviewNight() = PreviewWrapper {
         uiState = SettingsUiState(
             isLoaded = true,
             savedSettings = org.example.project.data.models.AppSettings.default(),
-            hostText = "192.168.0.192",
+            hostText = "192.168.1.237",
             portText = "8080"
         ),
         onAction = {}

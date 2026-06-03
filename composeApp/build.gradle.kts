@@ -13,6 +13,9 @@ plugins {
     id("kotlin-parcelize")
     kotlin("plugin.serialization") version "2.3.20"
 
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.androidx.room)
+
 }
 
 kotlin {
@@ -65,6 +68,9 @@ kotlin {
             implementation(libs.androidx.datastore.core)
             implementation(libs.androidx.datastore.preferences)
 
+            implementation(libs.androidx.room.runtime)
+            implementation(libs.androidx.sqlite.bundled)
+
 
         }
         commonTest.dependencies {
@@ -76,7 +82,11 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.kotlinx.coroutinesSwing)
         }
+        jvmTest.dependencies {
+            runtimeOnly("org.slf4j:slf4j-simple:2.0.17")
+        }
     }
+
 }
 
 android {
@@ -108,6 +118,13 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
+    add("kspAndroid", libs.androidx.room.compiler)
+    add("kspJvm", libs.androidx.room.compiler)
+
+}
+
+room {
+    schemaDirectory("$projectDir/schemas")
 }
 
 tasks.withType<Test>().configureEach {

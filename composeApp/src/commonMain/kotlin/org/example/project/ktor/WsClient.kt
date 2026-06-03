@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.example.project.data.PreferencesDataSource
 import org.example.project.data.models.ConnectionPrefModel
+import org.example.project.platform.AppLogger
 import org.example.project.ui.screens.chat.ClientCommand
 import org.example.project.ui.screens.chat.ClientProtocolJson
 import org.example.project.ui.screens.chat.ServerEvent
@@ -29,7 +30,8 @@ import org.example.project.ui.screens.chat.ServerEvent
 class WsClient(
     private val client: HttpClient,
     private val pref: PreferencesDataSource,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val logger: AppLogger,
 ) : WsClientContract {
     private var session: WebSocketSession? = null
     private var reconnectJob: Job? = null
@@ -45,6 +47,7 @@ class WsClient(
         if (session != null) return
         _connectionState.value = ConnectionState.Connecting
         val connectionPref = pref.connectionSettingsFlow.first()
+        logger.i(TAG, "Connecting; host=${connectionPref.host} port=${connectionPref.port}")
         connect(connectionPref)
     }
 
@@ -64,9 +67,11 @@ class WsClient(
                 }
             }
             _connectionState.value = ConnectionState.Connected
+            logger.i(TAG, "Connected; host=${settings.host} port=${settings.port}")
             startMessageCollection()
         } catch (e: Exception) {
             _connectionState.value = ConnectionState.Disconnected(e.message)
+            logger.e(TAG, "Connection failed; host=${settings.host} port=${settings.port}", e)
             _events.emit(ServerEvent.ErrorEvent(message = "Connection failed: ${e.message}"))
             throw e
         }
@@ -77,6 +82,7 @@ class WsClient(
                 .drop(1)
                 .collect { newSettings ->
                     if (newSettings != settings) {
+                        logger.i(TAG, "Connection settings changed; old=${settings.host}:${settings.port} new=${newSettings.host}:${newSettings.port}")
                         reconnect(newSettings)
                     }
                 }
@@ -94,14 +100,16 @@ class WsClient(
                         if (raw.isBlank()) continue
                         try {
                             val event = ClientProtocolJson.decodeServerEvent(raw)
+                            logger.d(TAG, "Received event; type=${event.type}; payload=$event")
                             _events.emit(event)
                         } catch (e: Exception) {
-                            println("WsClient: Protocol Error. Could not parse: '$raw'. Error: ${e.message}")
+                            logger.e(TAG, "Protocol error. Could not parse incoming frame; raw=$raw", e)
                         }
                     }
                 }
             } catch (e: Exception) {
                 if (e !is kotlinx.coroutines.CancellationException) {
+                    logger.w(TAG, "Connection closed unexpectedly; reason=${e.message}")
                     _events.emit(ServerEvent.ErrorEvent(message = "Connection closed: ${e.message}"))
                     _connectionState.value = ConnectionState.Disconnected(e.message)
                 }
@@ -109,18 +117,26 @@ class WsClient(
                 if (_connectionState.value !is ConnectionState.Disconnected) {
                     _connectionState.value = ConnectionState.Disconnected()
                 }
+                logger.i(TAG, "Disconnected")
                 session = null
             }
         }
     }
 
     private suspend fun reconnect(newSettings: ConnectionPrefModel) {
+        logger.i(TAG, "Reconnecting; host=${newSettings.host} port=${newSettings.port}")
         closeInternal(cancelReconnectObserver = false)
         connect(newSettings)
     }
 
-    override suspend fun sendMessage(text: String, chatId: String) {
-        send(ClientCommand.SendMessageCommand(chatId = chatId, text = text))
+    override suspend fun sendMessage(text: String, chatId: String, clientMessageId: String?) {
+        send(
+            ClientCommand.SendMessageCommand(
+                chatId = chatId,
+                clientMessageId = clientMessageId,
+                text = text
+            )
+        )
     }
 
     override suspend fun renameUser(name: String) {
@@ -154,6 +170,7 @@ class WsClient(
     private suspend fun send(command: ClientCommand) {
         val currentSession = session ?: throw IllegalStateException("WebSocket is not connected")
         val text = ClientProtocolJson.encodeClientCommand(command)
+        logger.d(TAG, "Sending command; type=${command.type}")
         currentSession.send(Frame.Text(text))
     }
 
@@ -163,6 +180,7 @@ class WsClient(
 
     private suspend fun closeInternal(cancelReconnectObserver: Boolean) {
         _connectionState.value = ConnectionState.Idle
+        logger.i(TAG, "Closing socket; cancelReconnectObserver=$cancelReconnectObserver")
         if (cancelReconnectObserver) {
             reconnectJob?.cancel()
             reconnectJob = null
@@ -172,4 +190,6 @@ class WsClient(
         session?.close()
         session = null
     }
+
+    private companion object { const val TAG = "Chat:WsClient" }
 }

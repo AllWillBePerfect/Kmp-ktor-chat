@@ -6,7 +6,7 @@ data class ConnectionPrefModel(
 ) {
     companion object {
         fun default() = ConnectionPrefModel(
-            host = "192.168.0.192",
+            host = "192.168.1.237",
             port = 8080
         )
     }

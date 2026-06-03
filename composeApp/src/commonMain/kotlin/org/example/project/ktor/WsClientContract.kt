@@ -9,7 +9,7 @@ interface WsClientContract {
     val connectionState: StateFlow<ConnectionState>
 
     suspend fun connect()
-    suspend fun sendMessage(text: String, chatId: String = "general")
+    suspend fun sendMessage(text: String, chatId: String = "general", clientMessageId: String? = null)
     suspend fun renameUser(name: String)
     suspend fun requestUsers()
     suspend fun requestChats()

@@ -33,64 +33,51 @@ import org.example.project.ui.components.appbar.ConversationAppBarComponent
 import org.example.project.ui.components.message.MessagesComponent
 import org.example.project.ui.components.message.defaultMessageList
 import org.example.project.ui.components.userinput.ConversationUserInputComponent
-import org.example.project.ui.screens.chat.ChatUiAction
-import org.example.project.ui.screens.chat.ChatUiState
-import org.example.project.ui.screens.chat.ChatViewModel
 import org.example.project.ui.utils.PreviewWrapper
+import org.example.project.v2.ui.common.state.messages.composer.MessageComposerState
+import org.example.project.v2.ui.common.state.messages.list.MessageListState
+import org.example.project.v2.ui.screens.chat.MessageComposerViewModel
+import org.example.project.v2.ui.screens.chat.MessageListViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun ConversationRoute(
     viewModel: ConversationViewModel = koinViewModel(),
-    chatViewModel: ChatViewModel = koinViewModel(),
+    messageListViewModel: MessageListViewModel = koinViewModel(),
+    messageComposerViewModel: MessageComposerViewModel = koinViewModel(),
     onBackPressed: () -> Unit
 ) {
+    val chatState by viewModel.uiState.collectAsStateWithLifecycle()
+    val composerState by messageComposerViewModel.state.collectAsStateWithLifecycle()
+    val messageListState by messageListViewModel.state.collectAsStateWithLifecycle()
 
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val chatUiState by chatViewModel.uiState.collectAsStateWithLifecycle()
-
-    // Добавленная логика управления соединением
-    LifecycleEventEffect(Lifecycle.Event.ON_START) {
-        chatViewModel.onAction(ChatUiAction.Connect)
-    }
-
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
-        chatViewModel.onAction(ChatUiAction.Disconnect)
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.uiEvent.collect { event ->
-            when (event) {
-                ConversationUiEvent.OnBackPressed -> onBackPressed()
-            }
-        }
-    }
 
     ConversationScreen(
-        uiState = uiState,
-        onAction = viewModel::onAction,
-        chatUiState = chatUiState,
-        chatOnAction = chatViewModel::onAction
+        conversationState = ConversationRouteState(
+            chat = chatState,
+            messageList = messageListState,
+            composer = composerState,
+        ),
+        conversationActions = ConversationRouteActions(
+            onBackPressed = onBackPressed,
+            onMessageInputChanged = messageComposerViewModel::setMessageInput,
+            onSendMessage = messageComposerViewModel::sendMessage
+        )
     )
 }
 
 @Composable
 private fun ConversationScreen(
-    uiState: ConversationUiState,
-    onAction: (ConversationUiAction) -> Unit,
-    chatUiState: ChatUiState,
-    chatOnAction: (ChatUiAction) -> Unit,
+    conversationState: ConversationRouteState,
+    conversationActions: ConversationRouteActions,
 ) {
     ConversationContentWrapper(
-        uiState = uiState,
-        onAction = onAction,
-        chatUiState = chatUiState, // Прокидываем стейт для шапки
+        conversationState = conversationState,
+        conversationActions = conversationActions,
         content = { innerPadding ->
             ConversationContent(
-                uiState = uiState,
-                onAction = onAction,
-                chatUiState = chatUiState,
-                chatOnAction = chatOnAction,
+                conversationState = conversationState,
+                conversationActions = conversationActions,
                 innerPadding = innerPadding,
             )
         }
@@ -100,9 +87,8 @@ private fun ConversationScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ConversationContentWrapper(
-    uiState: ConversationUiState,
-    onAction: (ConversationUiAction) -> Unit,
-    chatUiState: ChatUiState, // Добавлено для динамической шапки
+    conversationState: ConversationRouteState,
+    conversationActions: ConversationRouteActions,
     content: @Composable (PaddingValues) -> Unit
 ) {
 
@@ -112,10 +98,12 @@ private fun ConversationContentWrapper(
     Scaffold(
         topBar = {
             ConversationAppBarComponent(
-                headlineText = "General chat",
-                supportingText = chatUiState.onlineCountText, // Используем реальный онлайн
+                headlineText = conversationState.title,
+                supportingText = conversationState.subtitle,
                 scrollBehavior = scrollBehavior,
-                onNavIconPressed = { onAction(ConversationUiAction.OnBackPressed) }
+                onNavIconPressed = {
+                    conversationActions.onBackPressed()
+                }
             )
         },
         contentWindowInsets = ScaffoldDefaults
@@ -130,10 +118,8 @@ private fun ConversationContentWrapper(
 
 @Composable
 private fun ConversationContent(
-    uiState: ConversationUiState,
-    onAction: (ConversationUiAction) -> Unit,
-    chatUiState: ChatUiState,
-    chatOnAction: (ChatUiAction) -> Unit,
+    conversationState: ConversationRouteState,
+    conversationActions: ConversationRouteActions,
     innerPadding: PaddingValues
 ) {
 
@@ -144,6 +130,7 @@ private fun ConversationContent(
     val messages = remember {
         defaultMessageList.toMutableStateList()
     }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -151,13 +138,15 @@ private fun ConversationContent(
     ) {
         MessagesComponent(
             modifier = Modifier.weight(1f),
-            messages = chatUiState.getReversedMessages,
+            messages = conversationState.messageList.messages.asReversed(),
+            messagesState = conversationState.messageList,
             scrollState = scrollState
         )
 
         ConversationUserInputComponent(
             onMessageSent = { content ->
-                chatOnAction(ChatUiAction.MessageSentWithText(content))
+                conversationActions.onMessageInputChanged(content)
+                conversationActions.onSendMessage()
                 /*messages.addFirst(
                     Message(
                         author = "me",
@@ -180,14 +169,46 @@ private fun ConversationContent(
     }
 }
 
+private data class ConversationRouteState(
+    val chat: ConversationUiState,
+    val messageList: MessageListState,
+    val composer: MessageComposerState,
+) {
+    val title: String
+        get() = chat.channel?.name?.ifBlank { chat.channel.id }.orEmpty()
+
+    val subtitle: String
+        get() = buildString {
+            append(chat.connectionState.name)
+            val memberCount = chat.members.size.takeIf { it > 0 } ?: chat.channel?.memberCount
+            if ((memberCount ?: 0) > 0) {
+                append(" • ")
+                append("$memberCount members")
+            }
+        }
+}
+
+private data class ConversationRouteActions(
+    val onBackPressed: () -> Unit,
+    val onMessageInputChanged: (String) -> Unit,
+    val onSendMessage: () -> Unit,
+)
+
+
 @Composable
 @Preview
 private fun PreviewNight() = PreviewWrapper {
     ConversationScreen(
-        uiState = ConversationUiState(),
-        onAction = {},
-        chatUiState = ChatUiState(),
-        chatOnAction = {}
+        conversationState = ConversationRouteState(
+            ConversationUiState(),
+            messageList = MessageListState(),
+            composer = MessageComposerState()
+        ),
+        conversationActions = ConversationRouteActions(
+            onBackPressed = {},
+            onMessageInputChanged = {},
+            onSendMessage = {},
+        )
     )
 }
 
@@ -197,9 +218,15 @@ private fun PreviewLight() = PreviewWrapper(
     isDarkTheme = false
 ) {
     ConversationScreen(
-        uiState = ConversationUiState(),
-        onAction = {},
-        chatUiState = ChatUiState(),
-        chatOnAction = {}
+        conversationState = ConversationRouteState(
+            ConversationUiState(),
+            messageList = MessageListState(),
+            composer = MessageComposerState()
+        ),
+        conversationActions = ConversationRouteActions(
+            onBackPressed = {},
+            onMessageInputChanged = {},
+            onSendMessage = {},
+        )
     )
 }

@@ -35,13 +35,18 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.example.project.domain.model.SyncStatus
 import org.example.project.ui.utils.PreviewWrapper
+import org.example.project.v2.ui.common.state.messages.list.MessageListState
 
 @Immutable
 data class Message(
+    val localId: String,
     val author: String,
     val content: String,
     val timestamp: String,
+    val syncStatus: SyncStatus = SyncStatus.COMPLETED,
+    val lastSyncError: String? = null,
     val image: Int? = null,
     val authorImage: ImageVector = if (author == "me") Icons.Default.Preview else Icons.Default.Park,
 ) {
@@ -49,6 +54,7 @@ data class Message(
         fun createMyMessage(
             text: String
         ) = Message(
+            localId = "preview",
             author = "me",
             content = text,
             timestamp = "00:00"
@@ -60,7 +66,8 @@ private val JumpToBottomThreshold = 56.dp
 
 @Composable
 fun MessagesComponent(
-    messages: List<Message>,
+    messages: List<org.example.project.v2.core.models.Message>,
+    messagesState: MessageListState,
     scrollState: LazyListState,
     modifier: Modifier = Modifier
 ) {
@@ -72,19 +79,22 @@ fun MessagesComponent(
             modifier = Modifier.fillMaxSize()
         ) {
             for (index in messages.indices) {
-                val authorAbove = messages.getOrNull(index + 1)?.author
-                val authorBelow = messages.getOrNull(index - 1)?.author
+                val authorAbove = messages.getOrNull(index + 1)?.user?.name
+                val authorBelow = messages.getOrNull(index - 1)?.user?.name
 
                 val content = messages[index]
 
-                val isAboveMessageAuthorDifferent = authorAbove != content.author
-                val isBelowMessageAuthorDifferent = authorBelow != content.author
+                val isAboveMessageAuthorDifferent = authorAbove != content.user.name
+                val isBelowMessageAuthorDifferent = authorBelow != content.user.name
                 item {
                     MessageComponent(
-                        text = content.content,
-                        isUserMe = content.author == "me",
+                        text = content.text,
+                        isUserMe = messagesState.currentUserId == content.user.id,
                         isAboveMessageAuthorDifferent = isAboveMessageAuthorDifferent,
-                        isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent
+                        isBelowMessageAuthorDifferent = isBelowMessageAuthorDifferent,
+                        readCount = messagesState.readCountForMessage(content),
+                        syncStatus = content.syncStatus,
+                        createdAt = content.createdAt
                     )
                 }
             }
@@ -110,7 +120,6 @@ fun MessagesComponent(
                 scope.launch {
 //                    scrollState.animateScrollToItem(0)
                     scrollState.scrollToItem(0)
-//                    scrollState.animateScrollToItem(0)
                 }
             },
             modifier = Modifier.align(Alignment.BottomEnd),
@@ -164,7 +173,7 @@ fun JumpToBottom(enabled: Boolean, onClicked: () -> Unit, modifier: Modifier = M
     }
 }
 
-@Composable
+/*@Composable
 @Preview
 private fun PreviewNight(
     @PreviewParameter(MessagesProvider::class)
@@ -190,7 +199,7 @@ private fun PreviewLight(
         scrollState = rememberLazyListState(),
         modifier = Modifier
     )
-}
+}*/
 
 private class MessagesProvider : PreviewParameterProvider<List<Message>> {
 
@@ -201,6 +210,7 @@ private class MessagesProvider : PreviewParameterProvider<List<Message>> {
 
 val defaultMessageList = listOf(
     Message(
+        localId = "1",
         author = "Alex",
         content = "@BestFriend",
         timestamp = "17:58",
@@ -208,6 +218,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "2",
         author = "Alex",
         content = "Hey 👋",
         timestamp = "17:58",
@@ -215,6 +226,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "3",
         author = "me",
         content = "Hi!",
         timestamp = "17:59",
@@ -222,6 +234,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "4",
         author = "Alex",
         content = "Did you finish the Compose screen?",
         timestamp = "18:00",
@@ -229,6 +242,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "5",
         author = "me",
         content = "Almost. Just polishing previews and animations.",
         timestamp = "18:01",
@@ -236,6 +250,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "6",
         author = "Alex",
         content = "Nice 🔥",
         timestamp = "18:01",
@@ -243,6 +258,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "7",
         author = "me",
         content = "I'm testing different message states right now.",
         timestamp = "18:02",
@@ -250,6 +266,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "8",
         author = "Alex",
         content = "Make sure long messages work correctly.",
         timestamp = "18:03",
@@ -257,6 +274,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "9",
         author = "Alex",
         content = "Make sure long messages work correctly.",
         timestamp = "18:03",
@@ -265,6 +283,7 @@ val defaultMessageList = listOf(
 
 
     Message(
+        localId = "10",
         author = "Alex",
         content = "This is a super long message that should ideally span across multiple lines so you can verify paddings, alignment, max width constraints and overall visual appearance of the message bubble inside the chat screen.",
         timestamp = "18:03",
@@ -272,6 +291,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "11",
         author = "me",
         content = "Yep, already checking that 😄",
         timestamp = "18:04",
@@ -279,6 +299,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "12",
         author = "Alex",
         content = "What about multiline content?",
         timestamp = "18:05",
@@ -286,6 +307,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "13",
         author = "me",
         content = """
                     First line
@@ -297,6 +319,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "14",
         author = "Alex",
         content = "Looks good to me.",
         timestamp = "18:06",
@@ -304,6 +327,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "15",
         author = "me",
         content = "Now adding emoji support 🚀🔥🎉",
         timestamp = "18:07",
@@ -311,6 +335,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "16",
         author = "Alex",
         content = "Compose usually handles that pretty well 👍",
         timestamp = "18:08",
@@ -318,6 +343,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "17",
         author = "System",
         content = "User Alex joined the chat",
         timestamp = "18:08",
@@ -325,6 +351,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "18",
         author = "me",
         content = "Testing empty message below",
         timestamp = "18:09",
@@ -332,6 +359,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "19",
         author = "me",
         content = "",
         timestamp = "18:09",
@@ -339,6 +367,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "20",
         author = "Alex",
         content = "And another short one.",
         timestamp = "18:10",
@@ -346,6 +375,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "21",
         author = "me",
         content = "Cool 😎",
         timestamp = "18:10",
@@ -353,6 +383,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "22",
         author = "Alex",
         content = "You should also preview scrolling behavior with a large amount of items in LazyColumn.",
         timestamp = "18:11",
@@ -360,6 +391,7 @@ val defaultMessageList = listOf(
     ),
 
     Message(
+        localId = "23",
         author = "me",
         content = "Good idea.",
         timestamp = "18:12",
