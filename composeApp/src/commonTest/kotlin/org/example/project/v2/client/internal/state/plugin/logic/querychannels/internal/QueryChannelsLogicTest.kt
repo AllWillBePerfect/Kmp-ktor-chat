@@ -45,6 +45,7 @@ class QueryChannelsLogicTest {
                     identifier = org.example.project.v2.client.internal.state.plugin.QueryChannelsIdentifier.Standard(NeutralFilterObject),
                     filter = NeutralFilterObject,
                     scope = backgroundScope,
+                    latestChannels = stateRegistry.channels,
                 ),
             ),
             eventHandler = eventHandler,
@@ -59,6 +60,7 @@ class QueryChannelsLogicTest {
 
     @Test
     fun watchAndAddChannel_fetchesAndStoresChannel() = runTest {
+        val stateRegistry = StateRegistry(scope = backgroundScope)
         val channel = channel(
             id = "general",
             name = "General",
@@ -74,12 +76,13 @@ class QueryChannelsLogicTest {
         )
         val logic = QueryChannelsLogic(
             chatClient = clientWithChannelResponse(channel, backgroundScope),
-            stateRegistry = StateRegistry(scope = backgroundScope),
+            stateRegistry = stateRegistry,
             queryChannelsStateLogic = QueryChannelsStateLogic(
                 QueryChannelsMutableState(
                     identifier = org.example.project.v2.client.internal.state.plugin.QueryChannelsIdentifier.Standard(NeutralFilterObject),
                     filter = NeutralFilterObject,
                     scope = backgroundScope,
+                    latestChannels = stateRegistry.channels,
                 ),
             ),
             eventHandler = ChatEventHandler { _, _, _ -> EventHandlingResult.Skip },

@@ -29,6 +29,14 @@ import kotlin.test.assertTrue
 
 class ChatClientTest {
 
+    private companion object {
+        val eventA = unknownEvent("a")
+        val eventB = unknownEvent("b")
+        val eventC = unknownEvent("c")
+
+        fun unknownEvent(type: String) = UnknownEvent(type = type, rawPayload = "{}")
+    }
+
     @Test
     fun instantiateChannelClientByTypeAndId() = runTest {
         val client = fixture(backgroundScope).client
@@ -54,16 +62,11 @@ class ChatClientTest {
     fun simpleSubscribeForMultipleEvents() = runTest {
         val fixture = fixture(backgroundScope)
         val result = mutableListOf<ChatEvent>()
-        val eventA = UnknownEvent(type = "a", rawPayload = "{}")
-        val eventB = UnknownEvent(type = "b", rawPayload = "{}")
-        val eventC = UnknownEvent(type = "c", rawPayload = "{}")
 
         fixture.client.subscribe { result.add(it) }
         runCurrent()
 
-        fixture.socket.mockEventReceived(eventA)
-        fixture.socket.mockEventReceived(eventB)
-        fixture.socket.mockEventReceived(eventC)
+        fixture.socket.emitEvents(eventA, eventB, eventC)
         runCurrent()
 
         assertEquals(listOf<ChatEvent>(eventA, eventB, eventC), result)
@@ -74,17 +77,11 @@ class ChatClientTest {
     fun subscribeSingleDeliversOnlyFirstMatchingEvent() = runTest {
         val fixture = fixture(backgroundScope)
         val result = mutableListOf<ChatEvent>()
-        val eventA = UnknownEvent(type = "a", rawPayload = "{}")
-        val eventB = UnknownEvent(type = "b", rawPayload = "{}")
-        val eventC = UnknownEvent(type = "c", rawPayload = "{}")
 
         fixture.client.subscribeSingle(filter = { it.type == "b" }) { result.add(it) }
         runCurrent()
 
-        fixture.socket.mockEventReceived(eventA)
-        fixture.socket.mockEventReceived(eventB)
-        fixture.socket.mockEventReceived(eventC)
-        fixture.socket.mockEventReceived(eventB)
+        fixture.socket.emitEvents(eventA, eventB, eventC, eventB)
         runCurrent()
 
         assertEquals(listOf<ChatEvent>(eventB), result)
@@ -95,9 +92,6 @@ class ChatClientTest {
     fun unsubscribeFromEvents() = runTest {
         val fixture = fixture(backgroundScope)
         val result = mutableListOf<ChatEvent>()
-        val eventA = UnknownEvent(type = "a", rawPayload = "{}")
-        val eventB = UnknownEvent(type = "b", rawPayload = "{}")
-        val eventC = UnknownEvent(type = "c", rawPayload = "{}")
 
         val disposable = fixture.client.subscribe { result.add(it) }
         runCurrent()
@@ -105,8 +99,7 @@ class ChatClientTest {
         fixture.socket.mockEventReceived(eventA)
         runCurrent()
         disposable.dispose()
-        fixture.socket.mockEventReceived(eventB)
-        fixture.socket.mockEventReceived(eventC)
+        fixture.socket.emitEvents(eventB, eventC)
         runCurrent()
 
         assertEquals(listOf<ChatEvent>(eventA), result)
@@ -376,6 +369,10 @@ class ChatClientTest {
             channelId: String,
             query: QueryChannelRequest,
         ): Channel = Channel(id = channelId, type = channelType)
+    }
+
+    private fun FakeChatSocket.emitEvents(vararg events: ChatEvent) {
+        events.forEach(::mockEventReceived)
     }
 
 }

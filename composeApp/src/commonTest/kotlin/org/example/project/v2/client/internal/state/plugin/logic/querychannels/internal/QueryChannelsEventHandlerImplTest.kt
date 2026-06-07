@@ -25,6 +25,7 @@ class QueryChannelsEventHandlerImplTest {
             identifier = QueryChannelsIdentifier.Standard(NeutralFilterObject),
             filter = NeutralFilterObject,
             scope = backgroundScope,
+            latestChannels = stateRegistry.channels,
         )
         val stateLogic = QueryChannelsStateLogic(mutableState)
         val handler = QueryChannelsEventHandlerImpl(
@@ -73,6 +74,7 @@ class QueryChannelsEventHandlerImplTest {
             identifier = QueryChannelsIdentifier.Standard(NeutralFilterObject),
             filter = NeutralFilterObject,
             scope = backgroundScope,
+            latestChannels = stateRegistry.channels,
         )
         val stateLogic = QueryChannelsStateLogic(mutableState)
         val handler = QueryChannelsEventHandlerImpl(

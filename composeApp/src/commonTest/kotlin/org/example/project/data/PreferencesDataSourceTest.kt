@@ -1,7 +1,5 @@
 package org.example.project.data
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -14,6 +12,7 @@ import org.example.project.data.models.ThemeMode
 import org.example.project.data.models.UserPrefModel
 import org.example.project.testutils.InMemoryPreferencesDataStore
 import org.example.project.testutils.TestAppDispatchers
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -23,24 +22,25 @@ import kotlin.test.assertTrue
 class PreferencesDataSourceTest {
 
     private val dispatcher = StandardTestDispatcher()
+    private lateinit var dataSource: PreferencesDataSource
+
+    @BeforeTest
+    fun setUp() {
+        dataSource = createDataSource()
+    }
 
     @Test
     fun connectionSettingsFlow_returnsDefaultsForEmptyStore() = runTest(dispatcher) {
-        val dataSource = createDataSource()
-
         assertEquals(ConnectionPrefModel.default(), dataSource.connectionSettingsFlow.first())
     }
 
     @Test
     fun appSettingsFlow_returnsDefaultsForEmptyStore() = runTest(dispatcher) {
-        val dataSource = createDataSource()
-
         assertEquals(AppSettings.default(), dataSource.appSettingsFlow.first())
     }
 
     @Test
     fun saveAppSettings_updatesAppAndConnectionFlows() = runTest(dispatcher) {
-        val dataSource = createDataSource()
         val settings = AppSettings(
             host = "chat.local",
             port = 8181,
@@ -62,7 +62,6 @@ class PreferencesDataSourceTest {
 
     @Test
     fun saveUserData_persistsUserFields() = runTest(dispatcher) {
-        val dataSource = createDataSource()
         val user = UserPrefModel(
             token = "token-123",
             userId = "42",
@@ -78,7 +77,6 @@ class PreferencesDataSourceTest {
 
     @Test
     fun clearAuthData_removesStoredUserFields() = runTest(dispatcher) {
-        val dataSource = createDataSource()
         dataSource.saveUserData(
             UserPrefModel(
                 token = "token-123",

@@ -28,7 +28,7 @@ class ChannelEventHandlerImplTest {
                 stateRegistry = stateRegistry,
                 currentUserIdProvider = { "alice" },
             ),
-            onChannelUpdated = {},
+            onChannelStateUpdated = {},
         )
         stateRegistry.upsertChannel(Channel(id = "general", type = "messaging"))
 
@@ -69,7 +69,7 @@ class ChannelEventHandlerImplTest {
                 stateRegistry = stateRegistry,
                 currentUserIdProvider = { "alice" },
             ),
-            onChannelUpdated = {},
+            onChannelStateUpdated = {},
         )
         stateRegistry.upsertChannel(Channel(id = "general", type = "messaging"))
 
@@ -117,7 +117,7 @@ class ChannelEventHandlerImplTest {
             cid = "messaging:general",
             stateRegistry = stateRegistry,
             messageStateUpdater = updater,
-            onChannelUpdated = {},
+            onChannelStateUpdated = {},
         )
         updater.applyLocalSend(
             Message(
